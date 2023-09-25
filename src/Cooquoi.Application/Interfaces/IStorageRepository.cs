@@ -1,9 +1,13 @@
-﻿using Cooquoi.Core.Functional;
-using Cooquoi.Domain.Entities;
+﻿using Cooquoi.Domain.Business;
 
 namespace Cooquoi.Application.Interfaces;
 
 public interface IStorageRepository
 {
-    Task<Result> AddNewStorage(Storage storage);
+    // getters
+    Task<Storage> GetStorageById(Guid id);
+    
+    // actions
+    Task AddNewStorage(Storage storage);
+    Task SaveStorage(Storage storage);
 }

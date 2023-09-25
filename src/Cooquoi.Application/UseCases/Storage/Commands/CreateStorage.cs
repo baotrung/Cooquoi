@@ -1,5 +1,4 @@
 ﻿using Cooquoi.Application.Interfaces;
-using Cooquoi.Core.Functional;
 using FluentValidation;
 using MediatR;
 
@@ -7,17 +6,19 @@ namespace Cooquoi.Application.UseCases.Storage.Commands;
 
 public static class CreateStorage
 {
-    public record Command(string StorageName) : IRequest<Result<Guid>>;
+    public record Command(string StorageName) : IRequest<Guid>;
     
     public class Validator : AbstractValidator<Command>
     {
         public Validator()
         {
-            RuleFor(x => x.StorageName).NotEmpty();
+            RuleFor(x => x.StorageName)
+                .NotNull()
+                .NotEmpty();
         }
     }
 
-    public class Handler : IRequestHandler<Command, Result<Guid>>
+    public class Handler : IRequestHandler<Command, Guid>
     {
         private readonly IStorageRepository _storageRepository;
 
@@ -26,14 +27,12 @@ public static class CreateStorage
             _storageRepository = storageRepository;
         }
 
-        public async Task<Result<Guid>> Handle(Command request, CancellationToken cancellationToken)
+        public async Task<Guid> Handle(Command request, CancellationToken cancellationToken)
         {
             var storageName = request.StorageName;
-            var storage = new Domain.Entities.Storage(Guid.NewGuid(), storageName);
-            var res = await _storageRepository.AddNewStorage(storage);
-            return !res.IsSuccess 
-                ? Result<Guid>.Fail(res.Failures) 
-                : Result<Guid>.Success(storage.Id);
+            var storage = new Domain.Business.Storage(Guid.NewGuid(), storageName);
+            await _storageRepository.AddNewStorage(storage);
+            return storage.Id;
         }
     }
     

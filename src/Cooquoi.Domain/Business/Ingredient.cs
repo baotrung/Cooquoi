@@ -1,7 +1,7 @@
 ﻿using Cooquoi.Core.Domain;
 using Cooquoi.Domain.Enums;
 
-namespace Cooquoi.Domain.Entities;
+namespace Cooquoi.Domain.Business;
 
 public class Ingredient : EntityBase
 {

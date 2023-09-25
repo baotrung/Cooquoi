@@ -1,12 +1,11 @@
-﻿using Cooquoi.Core.Functional;
-using FluentValidation;
+﻿using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Cooquoi.Application.PipelineBehaviors;
 
-public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, Result<TResponse>>
-    where TRequest : IRequest<Result<TResponse>>
+public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
+    where TRequest : IRequest<TResponse>
 {
     private readonly IServiceProvider _serviceProvider;
 
@@ -15,9 +14,9 @@ public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TReques
         _serviceProvider = serviceProvider;
     }
 
-    public async Task<Result<TResponse>> Handle(
+    public async Task<TResponse> Handle(
         TRequest request, 
-        RequestHandlerDelegate<Result<TResponse>> next,
+        RequestHandlerDelegate<TResponse> next,
         CancellationToken cancellationToken)
     {
         var validator = _serviceProvider.GetService<IValidator<TRequest>>();
@@ -26,20 +25,9 @@ public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TReques
             return await next();
         }
         
-        var context = new ValidationContext<TRequest>(request);
-        
-        var validationResult = await validator.ValidateAsync(context, cancellationToken);
+        var validationResult = await validator.ValidateAsync(request, cancellationToken);
         
         if (validationResult.IsValid) return await next();
-        var failures = validationResult
-            .Errors
-            .Select(err => new Failure
-            {
-                Code = "ValidationError",
-                Message = err.ErrorMessage,
-                Data = err
-            })
-            .ToList();
-        return Result<TResponse>.Fail(failures);
+        throw new ValidationException(validationResult.Errors);
     }
 }
